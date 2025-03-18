@@ -1,0 +1,16 @@
+li {
+    list-style-type: none;
+}
+
+.buttonPanel {
+
+    padding: 5%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+#importButton {
+    width: 200rem;
+}
