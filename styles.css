@@ -19,7 +19,11 @@ li {
 }
 
 body {
-    padding-top: 0;
+    margin-top: 0;
     min-width: 15rem;
     
+}
+
+.hidden {
+    display: none;
 }

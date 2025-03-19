@@ -7,31 +7,50 @@ chrome.bookmarks.getTree((tree) => {
 function displayBookmarks(nodes, parentNode) {
   for (const node of nodes) {
     const listItem = document.createElement("li");
+
+    // Create checkbox
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.id = node.id;
 
-    // Create an icon and label for folder/bookmark distinction
-    const icon = document.createElement("span");
-    icon.textContent = node.children ? "📁 " : "🔖 ";
-    
+    // Determine if it's a folder or a bookmark
+    let icon = document.createElement("span");
+    if (node.children) {
+      icon.textContent = "📂"; // Closed folder
+      icon.style.cursor = "pointer";
+      icon.style.marginRight = "5px";
+    } else {
+      icon.textContent = "🔖"; // Bookmark icon
+      icon.style.marginRight = "5px";
+    }
+
+    // Label (title)
     const label = document.createElement("span");
     label.textContent = node.title || "Unnamed";
+    label.style.marginLeft = "5px";
 
-    listItem.classList.add(node.children ? "folder" : "bookmark");
+    // Append elements
     listItem.appendChild(checkbox);
     listItem.appendChild(icon);
     listItem.appendChild(label);
     parentNode.appendChild(listItem);
 
-    // If the node has children, create a nested list
+    // Create sublist (hidden by default if it's a folder)
+    let sublist;
     if (node.children) {
-      const sublist = document.createElement("ul");
-      listItem.appendChild(sublist);
+      sublist = document.createElement("ul");
+      sublist.classList.add("hidden"); // Hide initially
+      parentNode.appendChild(sublist);
       displayBookmarks(node.children, sublist);
+
+      // Folder click toggles visibility
+      icon.addEventListener("click", () => {
+        const isHidden = sublist.classList.toggle("hidden");
+        icon.textContent = isHidden ? "📂" : "📁"; // Toggle open/close folder icon
+      });
     }
 
-    // Handle checking/unchecking logic for nested checkboxes
+    // Handle checking/unchecking logic
     checkbox.addEventListener("change", () => {
       if (node.children) {
         checkNested(checkbox, node.children, checkbox.checked);
@@ -39,6 +58,8 @@ function displayBookmarks(nodes, parentNode) {
     });
   }
 }
+
+
 
 
 // Function to check/uncheck all nested checkboxes
