@@ -6,23 +6,27 @@ chrome.bookmarks.getTree((tree) => {
 // Recursively display the bookmarks with checkboxes and icons
 function displayBookmarks(nodes, parentNode) {
   for (const node of nodes) {
+  
     const listItem = document.createElement("li");
 
     // Create checkbox
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.id = node.id;
-
     // Determine if it's a folder or a bookmark
     let icon = document.createElement("span");
+
     if (node.children) {
-      icon.textContent = "📂"; // Closed folder
+      icon.textContent = "+ 📁"; // Closed folder
       icon.style.cursor = "pointer";
       icon.style.marginRight = "5px";
-    } else {
-      icon.textContent = "🔖"; // Bookmark icon
+    }
+
+    else {
+      icon.textContent = "| 🔖"; // Bookmark icon
       icon.style.marginRight = "5px";
     }
+
 
     // Label (title)
     const label = document.createElement("span");
@@ -46,7 +50,7 @@ function displayBookmarks(nodes, parentNode) {
       // Folder click toggles visibility
       icon.addEventListener("click", () => {
         const isHidden = sublist.classList.toggle("hidden");
-        icon.textContent = isHidden ? "📂" : "📁"; // Toggle open/close folder icon
+        icon.textContent = isHidden ? "+ 📁" : "- 📂"; // Toggle open/close folder icon
       });
     }
 
@@ -140,25 +144,53 @@ document.getElementById("importButton").addEventListener("change", (event) => {
   }
 });
 
-function importBookmarks(bookmarks, parentId = "1", idMap = {}) {
-  bookmarks.forEach((bookmark) => {
+async function importBookmarks(bookmarks, parentId = "1") {
+  for (const bookmark of bookmarks) {
     if (bookmark.children) {
-      // Create the folder first
-      chrome.bookmarks.create({ parentId, title: bookmark.title }, (newFolder) => {
-        idMap[bookmark.id] = newFolder.id; // Store new ID
-        importBookmarks(bookmark.children, newFolder.id, idMap); // Recursively add children
-      });
+      // Check if the folder already exists
+      const existingFolders = await getExistingBookmarks(parentId);
+      const matchingFolder = existingFolders.find(f => f.title === bookmark.title);
+
+      if (matchingFolder) {
+        console.log(`Removing existing folder: ${matchingFolder.title}`);
+        await removeBookmark(matchingFolder.id);
+      }
+
+      // Create the new folder
+      console.log(`Creating new folder: ${bookmark.title}`);
+      const newFolder = await createBookmark({ parentId, title: bookmark.title });
+
+      // Recursively import its children
+      await importBookmarks(bookmark.children, newFolder.id);
     } else {
-      // Queue bookmark creation until folders are set up
-      setTimeout(() => {
-        chrome.bookmarks.create({
-          parentId: idMap[bookmark.parentId] || parentId,
-          title: bookmark.title,
-          url: bookmark.url
-        });
-      }, 500);
+      // Create the new bookmark
+      console.log(`Creating new bookmark: ${bookmark.title}`);
+      await createBookmark({ parentId, title: bookmark.title, url: bookmark.url });
     }
+  }
+}
+
+
+function getExistingBookmarks(parentId) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.getChildren(parentId, (children) => {
+      resolve(children || []);
+    });
   });
 }
+
+function createBookmark(bookmark) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.create(bookmark, resolve);
+  });
+}
+
+function removeBookmark(bookmarkId) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.removeTree(bookmarkId, resolve);
+  });
+}
+
+
 
 
