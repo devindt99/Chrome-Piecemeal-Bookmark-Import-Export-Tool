@@ -1,16 +1,26 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <title>Piecemeal Bookmark Import/Export Tool</title>
-    <script src="popup.js" type="module"></script>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <section class="buttonPanel">
-      <button id="exportButton">Export Selected Bookmarks</button>
-      <button><label id="importButtonLabel" for="importButton">Import Bookmarks</label></button> 
-      <input type="file" id="importButton" accept=".json" />
-    </section>
-    <ul id="bookmarkList"></ul>
-  </body>
+<head>
+  <title>Piecemeal Bookmark Import/Export Tool</title>
+  <script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script> <!-- ✅ Ensure API loads -->
+  <script src="popup.js" type="module"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section class="buttonPanel">
+    <button id="exportButton">Export Selected Bookmarks</button>
+    <button><label id="importButtonLabel" for="importButton">Import Bookmarks</label></button> 
+    <input type="file" id="importButton" accept=".json" />
+
+    <hr>
+
+    <h3>Google Drive Sync</h3>
+    <button id="authorizeButton">Authorize Google Drive</button>
+    <button id="pickFileButton" style="display: none;">Pick Google Drive File</button>
+    <div id="savedDriveFiles" class="drive-file-grid"></div>
+    
+  </section>
+
+  <ul id="bookmarkList"></ul>
+</body>
 </html>

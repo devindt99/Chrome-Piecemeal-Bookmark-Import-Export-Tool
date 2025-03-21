@@ -30,7 +30,7 @@ body {
 }
 
 
-input {
+input[type="file"] {
     display: none;
 }
 
@@ -39,3 +39,25 @@ label {
     text-align: center;
 }
 
+.drive-file-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .drive-file-tile {
+    flex: 1 0 30%;
+    background: #f3f3f3;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+  }
+  
+  .drive-file-tile:hover {
+    background: #e0e0e0;
+  }
+  

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script>
+    window.addEventListener("load", () => {
+      console.log("Google API Loaded in gapi.html");
+      chrome.runtime.sendMessage({ action: "gapiLoaded" });
+    });
+  </script>
+</head>
+<body></body>
+</html>

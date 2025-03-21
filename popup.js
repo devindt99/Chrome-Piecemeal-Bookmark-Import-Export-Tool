@@ -1,7 +1,153 @@
+const CLIENT_ID = "178471512667-4bcecdeg0u3rr82f1j5beg4fapojekq8.apps.googleusercontent.com";  // Replace with your actual client ID
+const SCOPES = ["https://www.googleapis.com/auth/drive.readonly"];
+const REDIRECT_URI = chrome.identity.getRedirectURL();
+
+
+function handleAuthClick() {
+  const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${REDIRECT_URI}&scope=${SCOPES.join(" ")}`;
+
+  chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (redirectUrl) => {
+    if (chrome.runtime.lastError) {
+      console.error("Auth error:", chrome.runtime.lastError);
+      return;
+    }
+
+    const urlParams = new URLSearchParams(new URL(redirectUrl).hash.replace("#", "?"));
+    const accessToken = urlParams.get("access_token");
+
+    if (accessToken) {
+      chrome.storage.local.set({ googleAccessToken: accessToken }, () => {
+        console.log("Google Drive Access Token saved!");
+        document.getElementById("pickFileButton").style.display = "block";
+      });
+    }
+  });
+}
+
+async function pickFileFromDrive() {
+  chrome.storage.local.get(["googleAccessToken"], async (result) => {
+    if (!result.googleAccessToken) {
+      alert("You need to authorize Google Drive first.");
+      return;
+    }
+
+    try {
+      const response = await fetch("https://www.googleapis.com/drive/v3/files?q=name contains 'bookmarks.json'&spaces=drive", {
+        headers: { Authorization: `Bearer ${result.googleAccessToken}` },
+      });
+
+      const data = await response.json();
+      if (!data.files || data.files.length === 0) {
+        alert("No bookmarks.json files found in Drive.");
+        return;
+      }
+
+      const container = document.getElementById("savedDriveFiles");
+      container.innerHTML = ""; // clear previous tiles
+
+      data.files.forEach((file) => {
+        const tile = document.createElement("div");
+        tile.className = "drive-file-tile";
+        tile.textContent = file.name;
+        tile.addEventListener("click", async () => {
+          chrome.storage.local.set({ googleDriveFileId: file.id }, () => {
+            alert(`File "${file.name}" selected!`);
+            loadBookmarksFromDrive();
+          });
+        });
+        container.appendChild(tile);
+      });
+
+    } catch (error) {
+      console.error("Error selecting file:", error);
+    }
+  });
+}
+
+
+async function loadBookmarksFromDrive() {
+  chrome.storage.local.get(["googleDriveFileId", "googleAccessToken"], async (result) => {
+    if (!result.googleDriveFileId || !result.googleAccessToken) {
+      console.error("No file selected or missing access token.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${result.googleDriveFileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${result.googleAccessToken}` },
+      });
+
+      const bookmarks = await response.json();
+      importBookmarks(bookmarks);
+      alert("Bookmarks imported successfully from Google Drive!");
+
+    } catch (error) {
+      console.error("Error loading file:", error);
+      alert("Error fetching bookmarks from Drive.");
+    }
+  });
+}
+
+document.getElementById("authorizeButton").addEventListener("click", handleAuthClick);
+document.getElementById("pickFileButton").addEventListener("click", pickFileFromDrive);
+// Function to import bookmarks
+async function importBookmarks(bookmarks, parentId = "1") {
+  
+  for (const bookmark of bookmarks) {
+    if (bookmark.children) {
+      const existingFolders = await getExistingBookmarks(parentId);
+      const matchingFolder = existingFolders.find(f => f.title === bookmark.title);
+
+      if (matchingFolder) {
+        await removeBookmark(matchingFolder.id);
+      }
+
+      const newFolder = await createBookmark({ parentId, title: bookmark.title });
+      await importBookmarks(bookmark.children, newFolder.id);
+    } else {
+      await createBookmark({ parentId, title: bookmark.title, url: bookmark.url });
+    }
+  }
+}
+
+function getExistingBookmarks(parentId) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.getChildren(parentId, (children) => {
+      resolve(children || []);
+    });
+  });
+}
+
+function createBookmark(bookmark) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.create(bookmark, resolve);
+  });
+}
+
+function removeBookmark(bookmarkId) {
+  return new Promise((resolve) => {
+    chrome.bookmarks.removeTree(bookmarkId, resolve);
+  });
+}
+
 chrome.bookmarks.getTree((tree) => {
   const bookmarkList = document.getElementById("bookmarkList");
   displayBookmarks(tree[0].children, bookmarkList);
 });
+
+function refreshBookmarkDisplay() {
+  const bookmarkList = document.getElementById("bookmarkList");
+  bookmarkList.innerHTML = ""; // Clear current display
+  chrome.bookmarks.getTree((tree) => {
+    displayBookmarks(tree[0].children, bookmarkList);
+  });
+}
+
+function handleImport(bookmarks) {
+  importBookmarks(bookmarks);
+  setTimeout(refreshBookmarkDisplay, 1000); // slight delay to ensure bookmarks are created
+}
+
 
 // Recursively display the bookmarks with checkboxes and icons
 function displayBookmarks(nodes, parentNode) {
@@ -108,6 +254,18 @@ document.getElementById("exportButton").addEventListener("click", async () => {
   downloadJSON(selectedBookmarks, "bookmarks_export.json");
 });
 
+document.getElementById("importButton").addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const bookmarks = JSON.parse(e.target.result);
+      handleImport(bookmarks); // Use this instead of direct import
+    };
+    reader.readAsText(file);
+  }
+});
+
 
 // Recursively filter out unchecked children
 function filterCheckedChildren(children, checkedIds) {
@@ -130,67 +288,3 @@ function downloadJSON(data, filename) {
   a.click();
   URL.revokeObjectURL(url);
 }
-
-// Handle importing bookmarks from a JSON file
-document.getElementById("importButton").addEventListener("change", (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const bookmarks = JSON.parse(e.target.result);
-      importBookmarks(bookmarks);
-    };
-    reader.readAsText(file);
-  }
-});
-
-async function importBookmarks(bookmarks, parentId = "1") {
-  for (const bookmark of bookmarks) {
-    if (bookmark.children) {
-      // Check if the folder already exists
-      const existingFolders = await getExistingBookmarks(parentId);
-      const matchingFolder = existingFolders.find(f => f.title === bookmark.title);
-
-      if (matchingFolder) {
-        console.log(`Removing existing folder: ${matchingFolder.title}`);
-        await removeBookmark(matchingFolder.id);
-      }
-
-      // Create the new folder
-      console.log(`Creating new folder: ${bookmark.title}`);
-      const newFolder = await createBookmark({ parentId, title: bookmark.title });
-
-      // Recursively import its children
-      await importBookmarks(bookmark.children, newFolder.id);
-    } else {
-      // Create the new bookmark
-      console.log(`Creating new bookmark: ${bookmark.title}`);
-      await createBookmark({ parentId, title: bookmark.title, url: bookmark.url });
-    }
-  }
-}
-
-
-function getExistingBookmarks(parentId) {
-  return new Promise((resolve) => {
-    chrome.bookmarks.getChildren(parentId, (children) => {
-      resolve(children || []);
-    });
-  });
-}
-
-function createBookmark(bookmark) {
-  return new Promise((resolve) => {
-    chrome.bookmarks.create(bookmark, resolve);
-  });
-}
-
-function removeBookmark(bookmarkId) {
-  return new Promise((resolve) => {
-    chrome.bookmarks.removeTree(bookmarkId, resolve);
-  });
-}
-
-
-
-
