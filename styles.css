@@ -48,22 +48,35 @@ label {
 }
 
 .drive-file-tile {
-    background: #f3f3f3;
-    padding: 0.5rem;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.2s ease-in-out;
     display: flex;
 
-    align-items: center;
-    width: 90%;
-}
+    justify-content: flex-start;
+    padding: 0.5rem;
 
+    border-bottom: 1px solid #ccc;
 
-.drive-file-tile:hover {
-    background: #e0e0e0;
-}
+    transition: background 0.2s ease-in-out;
+    cursor: pointer;
+    width: 100%;
+  }
+  
+
+  
+  .drive-file-tile .icon {
+    margin-right: 10px;
+    cursor: pointer;
+  }
+  
+  .drive-file-tile .drive-file-name {
+    flex-grow: 1;
+    text-align: center;
+  }
+  
+  .drive-file-tile .icon.delete {
+    margin-left: auto; /* Aligns delete to the far right */
+    color: red;
+  }
+  
 
 .bookmark-row {
     display: flex;
@@ -89,3 +102,4 @@ label {
 .panelButton {
     width: 90%;
 }
+
