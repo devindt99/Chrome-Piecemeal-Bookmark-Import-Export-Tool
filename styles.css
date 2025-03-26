@@ -15,11 +15,77 @@ li {
     border-width: 90%;
     gap: 0.75rem;
     justify-content: center;
-    border-bottom: 1px solid #ccc; /* Optional: subtle separator */
+    align-items: center;
+    border-bottom: 1px solid #ccc;
 }
 
 body {
-    padding-top: 0;
+    margin-top: 0;  
     min-width: 15rem;
-    
+
+}
+
+.hidden {
+    display: none;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+label {
+    width: 90%;
+    text-align: center;
+}
+
+.drive-file-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    width: 90%;
+    align-items: center;
+}
+
+.drive-file-tile {
+    background: #f3f3f3;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+    display: flex;
+
+    align-items: center;
+    width: 90%;
+}
+
+
+.drive-file-tile:hover {
+    background: #e0e0e0;
+}
+
+.bookmark-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.bookmark-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 6px;
+}
+
+.bookmark-left span,
+.bookmark-left a,
+.bookmark-left input {
+    vertical-align: middle;
+    line-height: 1.2;
+}
+
+.panelButton {
+    width: 90%;
 }

@@ -1,15 +1,23 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <title>Piecemeal Bookmark Import/Export Tool</title>
-    <script src="popup.js" type="module"></script>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <section class="buttonPanel">
-      <button id="exportButton">Export Selected Bookmarks</button>
-      <input type="file" id="importButton" accept=".json" />
-    </section>
-    <ul id="bookmarkList"></ul>
-  </body>
+<head>
+  <title>Piecemeal Bookmark Import/Export Tool</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <section class="buttonPanel">
+    <h3>Local Bookmarks</h3>
+    <button id="exportButton" class="panelButton">Export Selected Bookmarks</button>
+    <button class="panelButton"><label id="importButtonLabel" for="importButton">Import Bookmarks</label></button> 
+    <input type="file" id="importButton" accept=".json" />
+
+    <h3>Google Drive Sync</h3>
+    <button id="authorizeButton" class="panelButton">Authorize Google Drive</button>
+    <button id="pickFileButton" style="display: none;" class="panelButton">Import from Google Drive</button>
+    <div id="savedDriveFiles" class="drive-file-grid"></div>
+  </section>
+  <ul id="bookmarkList"></ul>
+  <!-- Modular script entry point -->
+  <script type="module" src="popup.js"></script>
+</body>
 </html>

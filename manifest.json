@@ -7,5 +7,12 @@
     "default_popup": "popup.html",
     "default_icon": "icon.png"
   },
-  "permissions": ["bookmarks"]
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "identity"
+  ],
+  "host_permissions": [
+    "https://www.googleapis.com/"
+  ]
 }
