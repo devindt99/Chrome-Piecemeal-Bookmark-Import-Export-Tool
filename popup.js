@@ -69,34 +69,68 @@ function displayTrackedDriveFiles() {
   chrome.storage.local.get(["trackedDriveFiles"], (result) => {
     const container = document.getElementById("savedDriveFiles");
     container.innerHTML = "";
+
     const files = result.trackedDriveFiles || [];
 
-    files.forEach((file) => {
+    files.forEach((file, index) => {
       const tile = document.createElement("div");
       tile.className = "drive-file-tile";
-      tile.textContent = "🔄 " + file.name;
 
-      tile.addEventListener("click", () => {
-        chrome.storage.local.get(["googleAccessToken"], async (res) => {
-          if (!res.googleAccessToken) return alert("You need to re-authenticate Google Drive.");
-          try {
-            const response = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
-              headers: { Authorization: `Bearer ${res.googleAccessToken}` },
-            });
-            const bookmarks = await response.json();
-            handleImport(bookmarks);
-            alert(`Imported: ${file.name}`);
-          } catch (error) {
-            console.error("Error loading from Drive:", error);
-            alert("Failed to load file from Drive.");
-          }
-        });
+      const name = document.createElement("span");
+      name.className = "drive-file-name";
+      name.textContent = file.name;
+
+      const updateBtn = document.createElement("span");
+      updateBtn.textContent = "🔄";
+      updateBtn.title = "Update from Drive";
+      updateBtn.style.marginRight = "10px";
+      updateBtn.style.cursor = "pointer";
+      updateBtn.addEventListener("click", () => {
+        fetchAndImportFile(file.id, file.name);
       });
 
+      const deleteBtn = document.createElement("span");
+      deleteBtn.textContent = "❌";
+      deleteBtn.title = "Untrack this file";
+      deleteBtn.style.cursor = "pointer";
+      deleteBtn.style.color = "red";
+      deleteBtn.addEventListener("click", () => {
+        if (confirm(`Untrack "${file.name}"?`)) {
+          files.splice(index, 1);
+          chrome.storage.local.set({ trackedDriveFiles: files }, displayTrackedDriveFiles);
+        }
+      });
+
+      tile.appendChild(updateBtn);
+      tile.appendChild(name);
+      tile.appendChild(deleteBtn);
       container.appendChild(tile);
     });
   });
 }
+
+async function fetchAndImportFile(fileId, fileName) {
+  chrome.storage.local.get(["googleAccessToken"], async (res) => {
+    if (!res.googleAccessToken) {
+      alert("You need to re-authenticate Google Drive.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${res.googleAccessToken}` },
+      });
+
+      const bookmarks = await response.json();
+      importBookmarks(bookmarks);
+      alert(`Imported: ${fileName}`);
+    } catch (error) {
+      console.error("Error loading from Drive:", error);
+      alert("Failed to load file from Drive.");
+    }
+  });
+}
+
 
 // === Bookmark Import Logic ===
 //TODO: Change bookmark replace logic to use UUID (assign it during export since default id field is not unique) instead of title
